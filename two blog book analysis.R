@@ -32,3 +32,7 @@ books_clean
 books_sorted <- books_clean[order(books_clean$value_index), ]
 books_sorted
 plot(books_sorted$price_num, books_sorted$score, xlab="Price", ylab="Star Rating", main="Book Price vs Star Rating")
+books_sorted <- books_clean[order(-books_clean$value_index), ]
+top10_books <- head(books_sorted, 10)
+print("Top 10 books with highest value:")
+print(top10_books)
