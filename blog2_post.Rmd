@@ -1,0 +1,72 @@
+---
+title: "Finding Best Value Books with Web Scraping"
+author: "Yuchen Chen"
+date: "2026-09-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+In the context of purchasing book online, consumers always find it difficult to tell the true value of the books. The public always have a misunderstanding that the more expensive books are more valuable, which is not necessarily true. The real data of the purchase of books is usually not like that. Some books with a low price have a high rating by the readers, while many expensive ones receive a lower rating.
+
+In this blog, I would explain the process of using the technique of scraping in the R code to scrape the data of the public books in a book website, including the book name, the book price and the reader rating of the book. The core goal of the analysis is very clear, no longer depends simply upon the price or the rating of the books to judge the value of them, but to construct a value index to sort the best books which have a higher rating with a lower price, and provide a helpful and useful purchase suggestion for the readers.
+
+## Data Dealing and Analysis Methods
+This experiment use the scraping to batch obtain the primary data of all the 20 books of the website. The primary data on the website have some issues in the formatting, since the price have the pound symbol, and the rating is in the format of English words, which cannot be cauculated directly. Therefore, I cleaned the data by eliminating all the symbols of the currency and transformed the English star rating from one to five star into the numeric score from one to five.
+
+In order to measure the value for money, I constructed the specific value index of the books, to divide the rating of the books by their prices. A higher value index of the book means the every unit of money spent for this book, the feedback recieved by the readers is higher, and the value for money is also higher.
+
+After finishing the data cleaning, I sorted all the books from high to low considering their value index, and selected the top ten books with the highest value of money, and also draw a scatter plot of the price against rating in order to observe the overall relationship of the price and the rating of the books.
+
+## Analysis of the Research Result
+The visualized graph clearly indicates that the price of the books and the readers' rating have no positive relationship. The expensive books does not necessarilly have a high rating, and vice versa, the cheap books also have high quality ones, which totally rule out the opinion that the expensive one is better.
+
+The result of the sorting clearly selected the top ten books with the highest value index, all of the ten books have the advantages of lower price and higher rating simultaneously, which are the most suggested books to purchase in the website. The tiny number of missing value would not influence the final result of the ranking, which ensure the accuracy and validity of this selcetion result.
+
+## Conclusion
+Throughout this data analysis, I learned how to use the method of scratching ti obtain the public data of the website, and finish real life analysis by data cleaning, index constructing and sorting statistics.
+
+In our real life we always have bias by using our objective experience to make judgement on the stuffs, while data analysis can provide us with subjective evidence. This experiment proved that when we purchase a product, we cannot judge it simply by its price. Through data analysis we can easily sort and find out the best choice. This analytical logic can not only used in purchasing books, but also applied in all the consuming scenes, and help us realize the rational consumption.
+
+
+```{r}
+library(rvest)
+page <- read_html("https://books.toscrape.com/catalogue/page-1.html")
+titles <- page %>% html_elements("article.product_pod h3 a") %>% html_attr("title")
+prices <- page %>% html_elements("p.price_color") %>% html_text2()
+data.frame(book_titles=titles, book_prices=prices)
+rating <- page %>% html_elements("p.star-rating") %>% html_attr("class")
+rating
+books_df <- data.frame(
+book_title = titles,
+book_price = prices,
+book_rating = rating
+)
+books_df
+books_clean <- books_df
+books_clean$price_num <- as.numeric(sub("$","",books_clean$book_price))
+books_clean$price_num <- as.numeric(sub("£","",books_clean$book_price))
+books_clean
+books_clean$score <- NA
+books_clean$score[endsWith(books_clean$book_rating, "One")] <- 1
+books_clean$score[endsWith(books_clean$book_rating, "Two")] <- 2
+books_clean$score[endsWith(books_clean$book_rating, "Three")] <- 3
+books_clean$score[endsWith(books_clean$book_rating, "Four")] <- 4
+books_clean$score[endsWith(books_clean$book_rating, "Five")] <- 5
+books_clean
+books_clean$value_index <- books_clean$score / books_clean$price_num
+books_clean
+titles
+books_clean$book_title <- titles
+books_clean
+books_sorted <- books_clean[order(books_clean$value_index), ]
+books_sorted
+plot(books_sorted$price_num, books_sorted$score, xlab="Price", ylab="Star Rating", main="Book Price vs Star Rating")
+books_sorted <- books_clean[order(-books_clean$value_index), ]
+top10_books <- head(books_sorted, 10)
+print("Top 10 books with highest value:")
+print(top10_books)
+```
